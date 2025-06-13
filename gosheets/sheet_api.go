@@ -42,11 +42,11 @@ func (ss *SheetService) SheetRange(sheet, getRange string) string {
 	return fmt.Sprintf("%s!%s", sheet, getRange)
 }
 
-func (ss *SheetService) Get(key string, sheetRange string) [][]interface{} {
+func (ss *SheetService) Get(key string, sheetRange string) ([][]interface{}, error) {
 	return sheetGet(ss.Service, key, sheetRange)
 }
 
-func (ss *SheetService) BatchGet(key string, sheetRanges []string) [][][]interface{} {
+func (ss *SheetService) BatchGet(key string, sheetRanges []string) ([][][]interface{}, error) {
 	return sheetBatchGet(ss.Service, key, sheetRanges)
 }
 
@@ -67,23 +67,23 @@ func prepareClient() *http.Client {
 	return conf.Client(context.Background())
 }
 
-func sheetGet(srv *sheets.Service, key string, sheetRange string) [][]interface{} {
+func sheetGet(srv *sheets.Service, key string, sheetRange string) ([][]interface{}, error) {
 	valueRenderOption := "UNFORMATTED_VALUE"
 	res, err := srv.Spreadsheets.Values.Get(key, string(sheetRange)).ValueRenderOption(valueRenderOption).Do()
 	if err != nil {
-		log.Printf("Unable to retrieve data from sheet: %v", err)
-		return nil
+		err = fmt.Errorf("Unable to retrieve data from sheet: %v", err)
+		return nil, err
 	}
 
-	return res.Values
+	return res.Values, nil
 }
 
-func sheetBatchGet(srv *sheets.Service, key string, sheetRanges []string) [][][]interface{} {
+func sheetBatchGet(srv *sheets.Service, key string, sheetRanges []string) ([][][]interface{}, error) {
 	valueRenderOption := "UNFORMATTED_VALUE"
 	res, err := srv.Spreadsheets.Values.BatchGet(key).Ranges(sheetRanges...).ValueRenderOption(valueRenderOption).Do()
 	if err != nil {
-		log.Printf("Unable to retrieve data from sheet: %v", err)
-		return nil
+		err = fmt.Errorf("Unable to retrieve data from sheet: %v", err)
+		return nil, err
 	}
 
 	values := [][][]interface{}{}
@@ -91,5 +91,5 @@ func sheetBatchGet(srv *sheets.Service, key string, sheetRanges []string) [][][]
 		values = append(values, v.Values)
 	}
 
-	return values
+	return values, nil
 }
